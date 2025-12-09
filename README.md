@@ -87,7 +87,7 @@ module "cloud_access_role_rg" {
 
 | Name | Description |
 |------|-------------|
-| role_assignment_ids | Map of role assignment IDs, keyed by 'group_id-scope-role_name' |
+| role_assignment_ids | Map of role assignment IDs, keyed by 'group_id::scope::role_name' |
 | role_assignments | Map of role assignment details including id, principal_id, role_name, and scope |
 
 ## Notes

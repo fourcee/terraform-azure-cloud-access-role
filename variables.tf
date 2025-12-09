@@ -26,9 +26,9 @@ variable "scopes" {
 
   validation {
     condition = alltrue([
-      for scope in var.scopes : can(regex("^/subscriptions/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}", scope))
+      for scope in var.scopes : can(regex("^/subscriptions/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}(/.*)?$", scope))
     ])
-    error_message = "All scopes must start with /subscriptions/ followed by a valid subscription UUID."
+    error_message = "All scopes must start with /subscriptions/ followed by a valid subscription UUID, and may optionally include resource group or resource paths."
   }
 }
 
