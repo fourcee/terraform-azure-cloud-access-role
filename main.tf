@@ -7,8 +7,8 @@ locals {
           group_id  = group_id
           scope     = scope
           role_name = role_name
-          # Create a unique key for each assignment
-          key = "${group_id}-${scope}-${role_name}"
+          # Create a unique key for each assignment using :: as separator to avoid collisions
+          key = "${group_id}::${scope}::${role_name}"
         }
       ]
     ]
