@@ -31,8 +31,9 @@ data "azurerm_role_definition" "role" {
 resource "azurerm_role_assignment" "assignment" {
   for_each = local.role_assignments_map
 
-  scope                = each.value.scope
-  role_definition_id   = data.azurerm_role_definition.role[each.value.role_name].id
-  principal_id         = each.value.group_id
+  scope                            = each.value.scope
+  role_definition_id               = data.azurerm_role_definition.role[each.value.role_name].id
+  principal_id                     = each.value.group_id
+  principal_type                   = "Group"
   skip_service_principal_aad_check = true
 }
