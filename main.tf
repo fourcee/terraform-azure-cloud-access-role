@@ -25,6 +25,12 @@ locals {
 
   # Map of custom role names for lookup
   custom_role_names = { for role in var.custom_roles : role.name => role }
+
+  # Combined map of role definition IDs (built-in and custom)
+  role_definition_ids = merge(
+    { for name, role in data.azurerm_role_definition.role : name => role.id },
+    { for name, role in azurerm_role_definition.custom : name => role.role_definition_resource_id }
+  )
 }
 
 # Create custom role definitions
@@ -56,7 +62,7 @@ resource "azurerm_role_assignment" "assignment" {
   for_each = local.role_assignments_map
 
   scope                            = each.value.scope
-  role_definition_id               = contains(keys(local.custom_role_names), each.value.role_name) ? azurerm_role_definition.custom[each.value.role_name].role_definition_resource_id : data.azurerm_role_definition.role[each.value.role_name].id
+  role_definition_id               = local.role_definition_ids[each.value.role_name]
   principal_id                     = each.value.group_id
   principal_type                   = "Group"
   skip_service_principal_aad_check = true
