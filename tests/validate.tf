@@ -26,7 +26,8 @@ module "test" {
 
   scopes = [
     "/subscriptions/00000000-0000-0000-0000-000000000000",
-    "/subscriptions/11111111-1111-1111-1111-111111111111"
+    "/subscriptions/11111111-1111-1111-1111-111111111111",
+    "/providers/Microsoft.Management/managementGroups/my-management-group"
   ]
 
   role_names = [

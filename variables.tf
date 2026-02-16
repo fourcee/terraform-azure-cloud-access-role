@@ -16,7 +16,7 @@ variable "group_ids" {
 }
 
 variable "scopes" {
-  description = "List of scopes where the role assignments will be created (e.g., subscription IDs in format '/subscriptions/{subscription-id}')"
+  description = "List of scopes where the role assignments will be created (e.g., '/subscriptions/{subscription-id}' or '/providers/Microsoft.Management/managementGroups/{management-group-id}')"
   type        = list(string)
 
   validation {
@@ -26,9 +26,9 @@ variable "scopes" {
 
   validation {
     condition = alltrue([
-      for scope in var.scopes : can(regex("^/subscriptions/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}(/.*)?$", scope))
+      for scope in var.scopes : can(regex("^(/subscriptions/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}(/.*)?|/providers/Microsoft.Management/managementGroups/[a-zA-Z0-9._-]+)$", scope))
     ])
-    error_message = "All scopes must start with /subscriptions/ followed by a valid subscription UUID, and may optionally include resource group or resource paths."
+    error_message = "All scopes must be either a subscription scope (/subscriptions/{uuid}[/...]) or a management group scope (/providers/Microsoft.Management/managementGroups/{id})."
   }
 }
 
