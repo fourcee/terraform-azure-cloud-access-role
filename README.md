@@ -6,7 +6,7 @@ Terraform module for creating Azure IAM role assignments to Entra (Azure AD) gro
 
 This module simplifies the process of assigning Azure roles to Entra groups by automatically creating role assignments for all combinations of:
 - Entra group IDs (principals)
-- Scopes (subscription IDs, resource groups, etc.)
+- Scopes (management groups, subscription IDs, resource groups, etc.)
 - Role names (Azure built-in or custom roles)
 
 ## Features
@@ -15,7 +15,7 @@ This module simplifies the process of assigning Azure roles to Entra groups by a
 - ✅ Uses Azure built-in role names (e.g., "Reader", "Contributor")
 - ✅ Supports custom role names
 - ✅ Create custom role definitions with granular permissions
-- ✅ Flexible scope definition (subscriptions, resource groups, resources)
+- ✅ Flexible scope definition (management groups, subscriptions, resource groups, resources)
 - ✅ Returns detailed output of all created assignments
 
 ## Usage
@@ -39,6 +39,26 @@ module "cloud_access_role" {
   role_names = [
     "Reader",
     "Contributor"
+  ]
+}
+```
+
+### Management Group Scope Example
+
+```hcl
+module "cloud_access_role_mg" {
+  source = "github.com/fourcee/terraform-azure-cloud-access-role"
+
+  group_ids = [
+    "12345678-1234-1234-1234-123456789abc"
+  ]
+
+  scopes = [
+    "/providers/Microsoft.Management/managementGroups/my-management-group"
+  ]
+
+  role_names = [
+    "Reader"
   ]
 }
 ```
@@ -121,7 +141,7 @@ module "cloud_access_role_custom" {
 | Name | Description | Type | Required |
 |------|-------------|------|----------|
 | group_ids | List of Entra (Azure AD) group object IDs to assign access to | `list(string)` | yes |
-| scopes | List of scopes where the role assignments will be created (e.g., subscription IDs in format '/subscriptions/{subscription-id}') | `list(string)` | yes |
+| scopes | List of scopes where the role assignments will be created (e.g., '/subscriptions/{subscription-id}' or '/providers/Microsoft.Management/managementGroups/{management-group-id}') | `list(string)` | yes |
 | role_names | List of Azure built-in or custom role names to assign | `list(string)` | yes |
 | custom_roles | List of custom role definitions to create and include as part of the assignment | `list(object)` | no |
 
@@ -156,7 +176,7 @@ The `custom_roles` variable accepts a list of objects with the following fields:
   - M = number of scopes
   - R = number of role names (built-in + custom)
 - Group IDs must be valid Entra (Azure AD) group object IDs
-- Scopes must be in the format: `/subscriptions/{id}` or `/subscriptions/{id}/resourceGroups/{name}` or more specific resource paths
+- Scopes must be in the format: `/subscriptions/{id}`, `/subscriptions/{id}/resourceGroups/{name}`, `/providers/Microsoft.Management/managementGroups/{id}`, or more specific resource paths
 - Role names must be valid Azure built-in or custom role names
 - Custom roles defined in `custom_roles` are automatically created and assigned to the specified groups and scopes
 
