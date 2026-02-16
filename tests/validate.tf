@@ -17,7 +17,7 @@ provider "azurerm" {
 
 # Test the module with sample data
 module "test" {
-  source = ".."
+  source = "./.."
 
   group_ids = [
     "00000000-0000-0000-0000-000000000001",
@@ -33,6 +33,19 @@ module "test" {
     "Reader",
     "Contributor"
   ]
+
+  custom_roles = [
+    {
+      name              = "Custom VM Reader"
+      display_name      = "Custom VM Reader"
+      description       = "Custom role for reading virtual machine information"
+      actions           = ["Microsoft.Compute/virtualMachines/read"]
+      not_actions       = []
+      data_actions      = []
+      not_data_actions  = []
+      assignable_scopes = ["/subscriptions/00000000-0000-0000-0000-000000000000"]
+    }
+  ]
 }
 
 # Validate that outputs are defined
@@ -42,4 +55,12 @@ output "test_role_assignment_ids" {
 
 output "test_role_assignments" {
   value = module.test.role_assignments
+}
+
+output "test_custom_role_definition_ids" {
+  value = module.test.custom_role_definition_ids
+}
+
+output "test_custom_role_definitions" {
+  value = module.test.custom_role_definitions
 }

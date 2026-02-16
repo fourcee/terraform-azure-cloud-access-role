@@ -48,3 +48,39 @@ variable "role_names" {
     error_message = "Role names cannot be empty or contain only whitespace."
   }
 }
+
+variable "custom_roles" {
+  description = "List of custom role definitions to create and include as part of the assignment"
+  type = list(object({
+    name              = string
+    display_name      = string
+    description       = string
+    actions           = list(string)
+    not_actions       = list(string)
+    data_actions      = list(string)
+    not_data_actions  = list(string)
+    assignable_scopes = list(string)
+  }))
+  default = []
+
+  validation {
+    condition = alltrue([
+      for role in var.custom_roles : length(trimspace(role.name)) > 0
+    ])
+    error_message = "Custom role names cannot be empty or contain only whitespace."
+  }
+
+  validation {
+    condition = alltrue([
+      for role in var.custom_roles : length(trimspace(role.display_name)) > 0
+    ])
+    error_message = "Custom role display names cannot be empty or contain only whitespace."
+  }
+
+  validation {
+    condition = alltrue([
+      for role in var.custom_roles : length(role.assignable_scopes) > 0
+    ])
+    error_message = "Custom roles must have at least one assignable scope."
+  }
+}
