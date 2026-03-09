@@ -35,11 +35,7 @@ variable "scopes" {
 variable "role_names" {
   description = "List of Azure built-in or custom role names to assign"
   type        = list(string)
-
-  validation {
-    condition     = length(var.role_names) > 0
-    error_message = "At least one role name must be provided."
-  }
+  default     = []
 
   validation {
     condition = alltrue([
