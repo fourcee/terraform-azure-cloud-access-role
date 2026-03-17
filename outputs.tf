@@ -47,11 +47,14 @@ output "custom_role_definitions" {
   }
 }
 
-output "pim_eligible_role_assignment_ids" {
-  description = "Map of PIM eligible role assignment IDs, keyed by 'group_id::scope::role_name' (empty when jit_enabled is false)"
+output "pim_eligible_role_assignments" {
   value = var.jit_enabled ? {
     for key, assignment in azurerm_pim_eligible_role_assignment.assignment :
-    key => assignment.id
+    key => {
+      scope                         = assignment.scope
+      role_definition_id            = assignment.role_definition_id
+      eligible_role_assignment_id   = assignment.id
+    }
   } : {}
 }
 
