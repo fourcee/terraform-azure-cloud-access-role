@@ -31,6 +31,24 @@ locals {
     { for name, role in data.azurerm_role_definition.role : name => role.id },
     { for name, role in azurerm_role_definition.custom : name => role.role_definition_resource_id }
   )
+
+  # Role management policies are defined per scope + role definition
+  role_policies = flatten([
+    for scope in var.scopes : [
+      for role_name in local.all_role_names : {
+        scope     = scope
+        role_name = role_name
+        key       = "${scope}::${role_name}"
+      }
+    ]
+  ])
+
+  role_policies_map = {
+    for policy in local.role_policies :
+    policy.key => policy
+  }
+
+  jit_max_activation_duration_iso8601 = var.jit_max_activation_duration_seconds == null ? null : format("PT%dS", floor(var.jit_max_activation_duration_seconds))
 }
 
 # Create custom role definitions
@@ -59,11 +77,45 @@ data "azurerm_role_definition" "role" {
 
 # Create role assignments for all combinations
 resource "azurerm_role_assignment" "assignment" {
-  for_each = local.role_assignments_map
+  for_each = var.jit_enabled ? {} : local.role_assignments_map
 
   scope                            = each.value.scope
   role_definition_id               = local.role_definition_ids[each.value.role_name]
   principal_id                     = each.value.group_id
   principal_type                   = "Group"
   skip_service_principal_aad_check = true
+}
+
+resource "azurerm_role_management_policy" "jit" {
+  for_each = var.jit_enabled ? local.role_policies_map : {}
+
+  scope              = each.value.scope
+  role_definition_id = local.role_definition_ids[each.value.role_name]
+
+  activation_rules {
+    maximum_duration      = local.jit_max_activation_duration_iso8601
+    require_justification = var.jit_require_justification
+    require_approval      = length(var.jit_approval_group_ids) > 0
+
+    dynamic "approval_stage" {
+      for_each = length(var.jit_approval_group_ids) > 0 ? [1] : []
+      content {
+        dynamic "primary_approver" {
+          for_each = toset(var.jit_approval_group_ids)
+          content {
+            object_id = primary_approver.value
+            type      = "Group"
+          }
+        }
+      }
+    }
+  }
+}
+
+resource "azurerm_pim_eligible_role_assignment" "assignment" {
+  for_each = var.jit_enabled ? local.role_assignments_map : {}
+
+  scope              = each.value.scope
+  role_definition_id = local.role_definition_ids[each.value.role_name]
+  principal_id       = each.value.group_id
 }

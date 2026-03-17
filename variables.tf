@@ -80,3 +80,44 @@ variable "custom_roles" {
     error_message = "Custom roles must have at least one assignable scope."
   }
 }
+
+variable "jit_enabled" {
+  description = "Enable Azure PIM eligible role assignments instead of regular role assignments"
+  type        = bool
+  default     = false
+}
+
+variable "jit_require_justification" {
+  description = "Require justification when activating a JIT role assignment"
+  type        = bool
+  default     = false
+}
+
+variable "jit_approval_group_ids" {
+  description = "List of Entra group object IDs used as JIT activation approvers"
+  type        = list(string)
+  default     = []
+
+  validation {
+    condition = alltrue([
+      for id in var.jit_approval_group_ids : can(regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$", id))
+    ])
+    error_message = "All JIT approval group IDs must be valid UUIDs in the format xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx."
+  }
+}
+
+variable "jit_max_activation_duration_seconds" {
+  description = "Maximum JIT activation duration in seconds"
+  type        = number
+  default     = null
+
+  validation {
+    condition     = var.jit_enabled ? try(var.jit_max_activation_duration_seconds > 0, false) : true
+    error_message = "jit_max_activation_duration_seconds must be set to a value greater than 0 when jit_enabled is true."
+  }
+
+  validation {
+    condition     = try(var.jit_max_activation_duration_seconds == floor(var.jit_max_activation_duration_seconds), true)
+    error_message = "jit_max_activation_duration_seconds must be a whole number of seconds."
+  }
+}

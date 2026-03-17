@@ -15,6 +15,7 @@ This module simplifies the process of assigning Azure roles to Entra groups by a
 - ✅ Uses Azure built-in role names (e.g., "Reader", "Contributor")
 - ✅ Supports custom role names
 - ✅ Create custom role definitions with granular permissions
+- ✅ Optional Azure PIM (JIT) eligible role assignments with activation policy
 - ✅ Flexible scope definition (management groups, subscriptions, resource groups, resources)
 - ✅ Returns detailed output of all created assignments
 
@@ -123,18 +124,43 @@ module "cloud_access_role_custom" {
 }
 ```
 
+### JIT (PIM Eligible) Example
+
+```hcl
+module "cloud_access_role_jit" {
+  source = "github.com/fourcee/terraform-azure-cloud-access-role"
+
+  group_ids = [
+    "12345678-1234-1234-1234-123456789abc"
+  ]
+
+  scopes = [
+    "/subscriptions/00000000-0000-0000-0000-000000000000"
+  ]
+
+  role_names = [
+    "Contributor"
+  ]
+
+  jit_enabled                         = true
+  jit_require_justification           = true
+  jit_approval_group_ids              = ["22222222-2222-2222-2222-222222222222"] # Set [] for no approval workflow
+  jit_max_activation_duration_seconds = 3600
+}
+```
+
 ## Requirements
 
 | Name | Version |
 |------|---------|
 | terraform | >= 1.0 |
-| azurerm | >= 3.0 |
+| azurerm | >= 3.64.0 |
 
 ## Providers
 
 | Name | Version |
 |------|---------|
-| azurerm | >= 3.0 |
+| azurerm | >= 3.64.0 |
 
 ## Inputs
 
@@ -142,8 +168,12 @@ module "cloud_access_role_custom" {
 |------|-------------|------|----------|
 | group_ids | List of Entra (Azure AD) group object IDs to assign access to | `list(string)` | yes |
 | scopes | List of scopes where the role assignments will be created (e.g., '/subscriptions/{subscription-id}' or '/providers/Microsoft.Management/managementGroups/{management-group-id}') | `list(string)` | yes |
-| role_names | List of Azure built-in or custom role names to assign | `list(string)` | yes |
+| role_names | List of Azure built-in or custom role names to assign | `list(string)` | no |
 | custom_roles | List of custom role definitions to create and include as part of the assignment | `list(object)` | no |
+| jit_enabled | Enable Azure PIM eligible role assignments instead of regular role assignments | `bool` | no |
+| jit_require_justification | Require justification when activating a JIT role assignment | `bool` | no |
+| jit_approval_group_ids | List of Entra group object IDs used as JIT activation approvers | `list(string)` | no |
+| jit_max_activation_duration_seconds | Maximum JIT activation duration in seconds (required when jit_enabled = true) | `number` | no |
 
 ### Custom Roles Object
 
@@ -168,6 +198,8 @@ The `custom_roles` variable accepts a list of objects with the following fields:
 | role_assignments | Map of role assignment details including id, principal_id, role_name, and scope |
 | custom_role_definition_ids | Map of custom role definition IDs, keyed by role name |
 | custom_role_definitions | Map of custom role definition details |
+| pim_eligible_role_assignment_ids | Map of PIM eligible role assignment IDs, keyed by 'group_id::scope::role_name' |
+| role_management_policy_ids | Map of role management policy IDs, keyed by 'scope::role_name' |
 
 ## Notes
 
@@ -175,6 +207,11 @@ The `custom_roles` variable accepts a list of objects with the following fields:
   - N = number of group IDs
   - M = number of scopes
   - R = number of role names (built-in + custom)
+- When `jit_enabled = true`, the module creates:
+  - `azurerm_role_management_policy` for each `scope::role_name`
+  - `azurerm_pim_eligible_role_assignment` for each `group_id::scope::role_name`
+  - no regular `azurerm_role_assignment` resources
+- If `jit_approval_group_ids` is empty, no JIT approval workflow is configured
 - Group IDs must be valid Entra (Azure AD) group object IDs
 - Scopes must be in the format: `/subscriptions/{id}`, `/subscriptions/{id}/resourceGroups/{name}`, `/providers/Microsoft.Management/managementGroups/{id}`, or more specific resource paths
 - Role names must be valid Azure built-in or custom role names
