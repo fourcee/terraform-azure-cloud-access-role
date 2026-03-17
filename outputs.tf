@@ -54,6 +54,7 @@ output "pim_eligible_role_assignments" {
       scope                         = assignment.scope
       role_definition_id            = assignment.role_definition_id
       eligible_role_assignment_id   = assignment.id
+      principal_id                  = assignment.principal_id
     }
   } : {}
 }
