@@ -112,7 +112,12 @@ variable "jit_max_activation_duration_seconds" {
   default     = null
 
   validation {
-    condition     = !var.jit_enabled || try(var.jit_max_activation_duration_seconds > 0, false)
+    condition     = var.jit_enabled ? try(var.jit_max_activation_duration_seconds > 0, false) : true
     error_message = "jit_max_activation_duration_seconds must be set to a value greater than 0 when jit_enabled is true."
+  }
+
+  validation {
+    condition     = try(var.jit_max_activation_duration_seconds == floor(var.jit_max_activation_duration_seconds), true)
+    error_message = "jit_max_activation_duration_seconds must be a whole number of seconds."
   }
 }

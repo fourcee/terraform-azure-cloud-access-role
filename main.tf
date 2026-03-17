@@ -47,6 +47,8 @@ locals {
     for policy in local.role_policies :
     policy.key => policy
   }
+
+  jit_max_activation_duration_iso8601 = var.jit_max_activation_duration_seconds == null ? null : format("PT%dS", floor(var.jit_max_activation_duration_seconds))
 }
 
 # Create custom role definitions
@@ -91,7 +93,7 @@ resource "azurerm_role_management_policy" "jit" {
   role_definition_id = local.role_definition_ids[each.value.role_name]
 
   activation_rules {
-    maximum_duration      = format("PT%vS", var.jit_max_activation_duration_seconds)
+    maximum_duration      = local.jit_max_activation_duration_iso8601
     require_justification = var.jit_require_justification
     require_approval      = length(var.jit_approval_group_ids) > 0
 
