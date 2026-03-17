@@ -4,7 +4,7 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = ">= 3.0"
+      version = ">= 3.64.0"
     }
   }
 }
@@ -38,18 +38,18 @@ module "cloud_access_role" {
   # Custom role definitions
   custom_roles = [
     {
-      name              = "Custom VM Operator"
-      display_name      = "Custom VM Operator"
-      description       = "Custom role for managing virtual machines with limited permissions"
-      actions           = [
+      name         = "Custom VM Operator"
+      display_name = "Custom VM Operator"
+      description  = "Custom role for managing virtual machines with limited permissions"
+      actions = [
         "Microsoft.Compute/virtualMachines/read",
         "Microsoft.Compute/virtualMachines/start/action",
         "Microsoft.Compute/virtualMachines/restart/action",
         "Microsoft.Compute/virtualMachines/powerOff/action"
       ]
-      not_actions       = []
-      data_actions      = []
-      not_data_actions  = []
+      not_actions      = []
+      data_actions     = []
+      not_data_actions = []
       assignable_scopes = [
         "/subscriptions/00000000-0000-0000-0000-000000000000",
         "/subscriptions/11111111-1111-1111-1111-111111111111"

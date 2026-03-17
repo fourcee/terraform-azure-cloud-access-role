@@ -4,7 +4,7 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = ">= 3.0"
+      version = ">= 3.64.0"
     }
   }
 }
@@ -49,6 +49,27 @@ module "test" {
   ]
 }
 
+module "test_jit" {
+  source = "./.."
+
+  group_ids = [
+    "00000000-0000-0000-0000-000000000001"
+  ]
+
+  scopes = [
+    "/subscriptions/00000000-0000-0000-0000-000000000000"
+  ]
+
+  role_names = [
+    "Reader"
+  ]
+
+  jit_enabled                         = true
+  jit_require_justification           = true
+  jit_approval_group_ids              = ["00000000-0000-0000-0000-000000000003"]
+  jit_max_activation_duration_seconds = 3600
+}
+
 # Validate that outputs are defined
 output "test_role_assignment_ids" {
   value = module.test.role_assignment_ids
@@ -64,4 +85,16 @@ output "test_custom_role_definition_ids" {
 
 output "test_custom_role_definitions" {
   value = module.test.custom_role_definitions
+}
+
+output "test_jit_role_assignment_ids" {
+  value = module.test_jit.role_assignment_ids
+}
+
+output "test_jit_pim_eligible_role_assignment_ids" {
+  value = module.test_jit.pim_eligible_role_assignment_ids
+}
+
+output "test_jit_role_management_policy_ids" {
+  value = module.test_jit.role_management_policy_ids
 }
