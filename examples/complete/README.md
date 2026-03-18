@@ -22,7 +22,7 @@ This example creates role assignments with the following configuration:
 1. Update the `main.tf` file with your actual values:
    - Replace `group_ids` with your Entra group object IDs
    - Replace `scopes` with your subscription IDs
-   - Adjust `role_names` as needed
+   - Adjust `predefined_roles` (and optional role conditions) as needed
 
 2. Initialize Terraform:
    ```bash
