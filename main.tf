@@ -1,15 +1,33 @@
 locals {
-  # Combine built-in role names with custom role names
-  all_role_names = concat(var.role_names, [for role in var.custom_roles : role.name])
+  # Predefined and custom role maps with optional assignment conditions
+  predefined_roles = {
+    for role in var.predefined_roles : role.name => {
+      name              = role.name
+      condition         = length(trimspace(try(role.condition, ""))) > 0 ? trimspace(role.condition) : null
+      condition_version = length(trimspace(try(role.condition_version, ""))) > 0 ? trimspace(role.condition_version) : null
+    }
+  }
+
+  custom_roles = {
+    for role in var.custom_roles : role.name => {
+      name              = role.name
+      condition         = length(trimspace(try(role.condition, ""))) > 0 ? trimspace(role.condition) : null
+      condition_version = length(trimspace(try(role.condition_version, ""))) > 0 ? trimspace(role.condition_version) : null
+    }
+  }
+
+  all_roles = merge(local.predefined_roles, local.custom_roles)
 
   # Create a list of all combinations of group_id, scope, and role_name
   role_assignments = flatten([
     for group_id in var.group_ids : [
       for scope in var.scopes : [
-        for role_name in local.all_role_names : {
-          group_id  = group_id
-          scope     = scope
-          role_name = role_name
+        for role_name, role in local.all_roles : {
+          group_id          = group_id
+          scope             = scope
+          role_name         = role_name
+          condition         = role.condition
+          condition_version = role.condition_version
           # Create a unique key for each assignment using :: as separator to avoid collisions
           key = "${group_id}::${scope}::${role_name}"
         }
@@ -23,7 +41,7 @@ locals {
     assignment.key => assignment
   }
 
-  # Map of custom role names for lookup
+  # Map of custom roles for lookup and creation
   custom_role_names = { for role in var.custom_roles : role.name => role }
 
   # Combined map of role definition IDs (built-in and custom)
@@ -35,7 +53,7 @@ locals {
   # Role management policies are defined per scope + role definition
   role_policies = flatten([
     for scope in var.scopes : [
-      for role_name in local.all_role_names : {
+      for role_name in keys(local.all_roles) : {
         scope     = scope
         role_name = role_name
         key       = "${scope}::${role_name}"
@@ -71,7 +89,7 @@ resource "azurerm_role_definition" "custom" {
 
 # Lookup role definition IDs by role name (for built-in roles only)
 data "azurerm_role_definition" "role" {
-  for_each = toset(var.role_names)
+  for_each = toset([for role in var.predefined_roles : role.name])
   name     = each.value
 }
 
@@ -84,6 +102,8 @@ resource "azurerm_role_assignment" "assignment" {
   principal_id                     = each.value.group_id
   principal_type                   = "Group"
   skip_service_principal_aad_check = true
+  condition                        = each.value.condition
+  condition_version                = each.value.condition_version
 }
 
 resource "azurerm_role_management_policy" "jit" {
@@ -118,4 +138,6 @@ resource "azurerm_pim_eligible_role_assignment" "assignment" {
   scope              = each.value.scope
   role_definition_id = local.role_definition_ids[each.value.role_name]
   principal_id       = each.value.group_id
+  condition          = each.value.condition
+  condition_version  = each.value.condition_version
 }

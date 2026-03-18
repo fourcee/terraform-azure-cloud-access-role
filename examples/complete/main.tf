@@ -29,10 +29,16 @@ module "cloud_access_role" {
     "/subscriptions/11111111-1111-1111-1111-111111111111"  # Prod Subscription
   ]
 
-  # Azure built-in role names
-  role_names = [
-    "Reader",
-    "Contributor"
+  # Azure built-in roles with optional assignment conditions
+  predefined_roles = [
+    {
+      name = "Reader"
+    },
+    {
+      name              = "Contributor"
+      condition         = "@Resource[Microsoft.Authorization/roleAssignments:PrincipalType] StringEqualsIgnoreCase 'Group'"
+      condition_version = "2.0"
+    }
   ]
 
   # Custom role definitions
@@ -54,6 +60,8 @@ module "cloud_access_role" {
         "/subscriptions/00000000-0000-0000-0000-000000000000",
         "/subscriptions/11111111-1111-1111-1111-111111111111"
       ]
+      condition         = "@Resource[Microsoft.Compute/virtualMachines:Name] StringLike 'prod-*'"
+      condition_version = "2.0"
     }
   ]
 }

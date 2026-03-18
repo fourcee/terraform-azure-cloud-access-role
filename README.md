@@ -7,13 +7,13 @@ Terraform module for creating Azure IAM role assignments to Entra (Azure AD) gro
 This module simplifies the process of assigning Azure roles to Entra groups by automatically creating role assignments for all combinations of:
 - Entra group IDs (principals)
 - Scopes (management groups, subscription IDs, resource groups, etc.)
-- Role names (Azure built-in or custom roles)
+- Predefined Azure built-in roles and custom roles
 
 ## Features
 
 - ✅ Assign multiple roles to multiple groups across multiple scopes
 - ✅ Uses Azure built-in role names (e.g., "Reader", "Contributor")
-- ✅ Supports custom role names
+- ✅ Supports optional RBAC assignment conditions for predefined and custom roles
 - ✅ Create custom role definitions with granular permissions
 - ✅ Optional Azure PIM (JIT) eligible role assignments with activation policy
 - ✅ Flexible scope definition (management groups, subscriptions, resource groups, resources)
@@ -37,9 +37,13 @@ module "cloud_access_role" {
     "/subscriptions/11111111-1111-1111-1111-111111111111"
   ]
 
-  role_names = [
-    "Reader",
-    "Contributor"
+  predefined_roles = [
+    {
+      name = "Reader"
+    },
+    {
+      name = "Contributor"
+    }
   ]
 }
 ```
@@ -58,8 +62,10 @@ module "cloud_access_role_mg" {
     "/providers/Microsoft.Management/managementGroups/my-management-group"
   ]
 
-  role_names = [
-    "Reader"
+  predefined_roles = [
+    {
+      name = "Reader"
+    }
   ]
 }
 ```
@@ -78,8 +84,10 @@ module "cloud_access_role_rg" {
     "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-resource-group"
   ]
 
-  role_names = [
-    "Virtual Machine Contributor"
+  predefined_roles = [
+    {
+      name = "Virtual Machine Contributor"
+    }
   ]
 }
 ```
@@ -98,8 +106,10 @@ module "cloud_access_role_custom" {
     "/subscriptions/00000000-0000-0000-0000-000000000000"
   ]
 
-  role_names = [
-    "Reader"
+  predefined_roles = [
+    {
+      name = "Reader"
+    }
   ]
 
   custom_roles = [
@@ -119,6 +129,8 @@ module "cloud_access_role_custom" {
       assignable_scopes = [
         "/subscriptions/00000000-0000-0000-0000-000000000000"
       ]
+      condition         = "@Resource[Microsoft.Compute/virtualMachines:Name] StringLike 'vm-*'"
+      condition_version = "2.0"
     }
   ]
 }
@@ -138,8 +150,12 @@ module "cloud_access_role_jit" {
     "/subscriptions/00000000-0000-0000-0000-000000000000"
   ]
 
-  role_names = [
-    "Contributor"
+  predefined_roles = [
+    {
+      name              = "Contributor"
+      condition         = "@Resource[Microsoft.Authorization/roleAssignments:PrincipalType] StringEqualsIgnoreCase 'Group'"
+      condition_version = "2.0"
+    }
   ]
 
   jit_enabled                         = true
@@ -168,12 +184,22 @@ module "cloud_access_role_jit" {
 |------|-------------|------|----------|
 | group_ids | List of Entra (Azure AD) group object IDs to assign access to | `list(string)` | yes |
 | scopes | List of scopes where the role assignments will be created (e.g., '/subscriptions/{subscription-id}' or '/providers/Microsoft.Management/managementGroups/{management-group-id}') | `list(string)` | yes |
-| role_names | List of Azure built-in or custom role names to assign | `list(string)` | no |
+| predefined_roles | List of Azure built-in role assignments to create, each with optional condition settings | `list(object)` | no |
 | custom_roles | List of custom role definitions to create and include as part of the assignment | `list(object)` | no |
 | jit_enabled | Enable Azure PIM eligible role assignments instead of regular role assignments | `bool` | no |
 | jit_require_justification | Require justification when activating a JIT role assignment | `bool` | no |
 | jit_approval_group_ids | List of Entra group object IDs used as JIT activation approvers | `list(string)` | no |
 | jit_max_activation_duration_seconds | Maximum JIT activation duration in seconds (required when jit_enabled = true) | `number` | no |
+
+### Predefined Roles Object
+
+The `predefined_roles` variable accepts a list of objects with the following fields:
+
+| Field | Description | Type |
+|-------|-------------|------|
+| name | Azure built-in role name to assign | `string` |
+| condition | Optional RBAC condition expression for the assignment | `string` |
+| condition_version | Optional RBAC condition version (for example `2.0`) | `string` |
 
 ### Custom Roles Object
 
@@ -189,6 +215,8 @@ The `custom_roles` variable accepts a list of objects with the following fields:
 | data_actions | List of allowed data actions for the role | `list(string)` |
 | not_data_actions | List of denied data actions for the role | `list(string)` |
 | assignable_scopes | List of scopes where the role can be assigned | `list(string)` |
+| condition | Optional RBAC condition expression for assignments created from this custom role | `string` |
+| condition_version | Optional RBAC condition version (for example `2.0`) | `string` |
 
 ## Outputs
 
@@ -206,7 +234,7 @@ The `custom_roles` variable accepts a list of objects with the following fields:
 - The module creates N×M×R role assignments where:
   - N = number of group IDs
   - M = number of scopes
-  - R = number of role names (built-in + custom)
+  - R = number of role definitions to assign (`predefined_roles` + `custom_roles`)
 - When `jit_enabled = true`, the module creates:
   - `azurerm_role_management_policy` for each `scope::role_name`
   - `azurerm_pim_eligible_role_assignment` for each `group_id::scope::role_name`
@@ -214,8 +242,9 @@ The `custom_roles` variable accepts a list of objects with the following fields:
 - If `jit_approval_group_ids` is empty, no JIT approval workflow is configured
 - Group IDs must be valid Entra (Azure AD) group object IDs
 - Scopes must be in the format: `/subscriptions/{id}`, `/subscriptions/{id}/resourceGroups/{name}`, `/providers/Microsoft.Management/managementGroups/{id}`, or more specific resource paths
-- Role names must be valid Azure built-in or custom role names
+- Predefined role names must be valid Azure built-in role names
 - Custom roles defined in `custom_roles` are automatically created and assigned to the specified groups and scopes
+- When condition settings are supplied for a role, both `condition` and `condition_version` must be set
 
 ## Common Azure Built-in Roles
 

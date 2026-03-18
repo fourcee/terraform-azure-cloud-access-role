@@ -30,9 +30,15 @@ module "test" {
     "/providers/Microsoft.Management/managementGroups/my-management-group"
   ]
 
-  role_names = [
-    "Reader",
-    "Contributor"
+  predefined_roles = [
+    {
+      name = "Reader"
+    },
+    {
+      name              = "Contributor"
+      condition         = "@Resource[Microsoft.Storage/storageAccounts:Name] StringEqualsIgnoreCase 'stsample'"
+      condition_version = "2.0"
+    }
   ]
 
   custom_roles = [
@@ -45,6 +51,8 @@ module "test" {
       data_actions      = []
       not_data_actions  = []
       assignable_scopes = ["/subscriptions/00000000-0000-0000-0000-000000000000"]
+      condition         = "@Resource[Microsoft.Compute/virtualMachines:Name] StringLike 'vm-*'"
+      condition_version = "2.0"
     }
   ]
 }
@@ -60,8 +68,12 @@ module "test_jit" {
     "/subscriptions/00000000-0000-0000-0000-000000000000"
   ]
 
-  role_names = [
-    "Reader"
+  predefined_roles = [
+    {
+      name              = "Reader"
+      condition         = "@Resource[Microsoft.Authorization/roleAssignments:PrincipalType] StringEqualsIgnoreCase 'Group'"
+      condition_version = "2.0"
+    }
   ]
 
   jit_enabled                         = true

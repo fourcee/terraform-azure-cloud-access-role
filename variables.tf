@@ -32,16 +32,38 @@ variable "scopes" {
   }
 }
 
-variable "role_names" {
-  description = "List of Azure built-in or custom role names to assign"
-  type        = list(string)
+variable "predefined_roles" {
+  description = "List of Azure built-in role assignments to create, each with optional condition settings"
+  type = list(object({
+    name              = string
+    condition         = optional(string)
+    condition_version = optional(string)
+  }))
   default     = []
 
   validation {
     condition = alltrue([
-      for name in var.role_names : length(trimspace(name)) > 0
+      for role in var.predefined_roles : length(trimspace(role.name)) > 0
     ])
-    error_message = "Role names cannot be empty or contain only whitespace."
+    error_message = "Predefined role names cannot be empty or contain only whitespace."
+  }
+
+  validation {
+    condition = length(distinct([
+      for role in var.predefined_roles : lower(trimspace(role.name))
+    ])) == length(var.predefined_roles)
+    error_message = "Predefined role names must be unique."
+  }
+
+  validation {
+    condition = alltrue([
+      for role in var.predefined_roles :
+      (
+        (try(role.condition, null) == null && try(role.condition_version, null) == null) ||
+        (length(trimspace(try(role.condition, ""))) > 0 && length(trimspace(try(role.condition_version, ""))) > 0)
+      )
+    ])
+    error_message = "predefined_roles condition and condition_version must either both be set (non-empty) or both be omitted."
   }
 }
 
@@ -56,6 +78,8 @@ variable "custom_roles" {
     data_actions      = list(string)
     not_data_actions  = list(string)
     assignable_scopes = list(string)
+    condition         = optional(string)
+    condition_version = optional(string)
   }))
   default = []
 
@@ -64,6 +88,13 @@ variable "custom_roles" {
       for role in var.custom_roles : length(trimspace(role.name)) > 0
     ])
     error_message = "Custom role names cannot be empty or contain only whitespace."
+  }
+
+  validation {
+    condition = length(distinct([
+      for role in var.custom_roles : lower(trimspace(role.name))
+    ])) == length(var.custom_roles)
+    error_message = "Custom role names must be unique."
   }
 
   validation {
@@ -78,6 +109,25 @@ variable "custom_roles" {
       for role in var.custom_roles : length(role.assignable_scopes) > 0
     ])
     error_message = "Custom roles must have at least one assignable scope."
+  }
+
+  validation {
+    condition = alltrue([
+      for role in var.custom_roles :
+      (
+        (try(role.condition, null) == null && try(role.condition_version, null) == null) ||
+        (length(trimspace(try(role.condition, ""))) > 0 && length(trimspace(try(role.condition_version, ""))) > 0)
+      )
+    ])
+    error_message = "custom_roles condition and condition_version must either both be set (non-empty) or both be omitted."
+  }
+
+  validation {
+    condition = length(setintersection(
+      toset([for role in var.custom_roles : lower(trimspace(role.name))]),
+      toset([for role in var.predefined_roles : lower(trimspace(role.name))])
+    )) == 0
+    error_message = "Custom role names must not overlap with predefined role names."
   }
 }
 
