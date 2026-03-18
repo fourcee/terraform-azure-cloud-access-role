@@ -63,7 +63,7 @@ variable "predefined_roles" {
         (length(trimspace(try(role.condition, ""))) > 0 && length(trimspace(try(role.condition_version, ""))) > 0)
       )
     ])
-    error_message = "predefined_roles condition and condition_version must either both be set (non-empty) or both be omitted."
+    error_message = "Predefined roles condition and condition_version must either both be set (non-empty) or both be omitted."
   }
 }
 
@@ -119,7 +119,7 @@ variable "custom_roles" {
         (length(trimspace(try(role.condition, ""))) > 0 && length(trimspace(try(role.condition_version, ""))) > 0)
       )
     ])
-    error_message = "custom_roles condition and condition_version must either both be set (non-empty) or both be omitted."
+    error_message = "Custom roles condition and condition_version must either both be set (non-empty) or both be omitted."
   }
 
   validation {
