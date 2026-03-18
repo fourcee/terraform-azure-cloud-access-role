@@ -52,7 +52,7 @@ variable "predefined_roles" {
     condition = length(distinct([
       for role in var.predefined_roles : lower(trimspace(role.name))
     ])) == length(var.predefined_roles)
-    error_message = "Predefined role names must be unique."
+    error_message = "Predefined role names must be unique (case-insensitive comparison)."
   }
 
   validation {
@@ -94,7 +94,7 @@ variable "custom_roles" {
     condition = length(distinct([
       for role in var.custom_roles : lower(trimspace(role.name))
     ])) == length(var.custom_roles)
-    error_message = "Custom role names must be unique."
+    error_message = "Custom role names must be unique (case-insensitive comparison)."
   }
 
   validation {
@@ -127,7 +127,7 @@ variable "custom_roles" {
       toset([for role in var.custom_roles : lower(trimspace(role.name))]),
       toset([for role in var.predefined_roles : lower(trimspace(role.name))])
     )) == 0
-    error_message = "Custom role names must not overlap with predefined role names."
+    error_message = "Custom role names must not overlap with predefined role names (case-insensitive comparison)."
   }
 }
 
