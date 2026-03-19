@@ -4,11 +4,6 @@ variable "group_ids" {
   default     = []
 
   validation {
-    condition     = length(var.group_ids) > 0 || length(var.user_ids) > 0
-    error_message = "At least one principal ID must be provided via group_ids and/or user_ids."
-  }
-
-  validation {
     condition = alltrue([
       for id in var.group_ids : can(regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$", id))
     ])
@@ -20,6 +15,11 @@ variable "user_ids" {
   description = "List of Entra (Azure AD) user object IDs to assign access to"
   type        = list(string)
   default     = []
+
+  validation {
+    condition     = length(var.group_ids) > 0 || length(var.user_ids) > 0
+    error_message = "At least one principal ID must be provided via group_ids and/or user_ids."
+  }
 
   validation {
     condition = alltrue([
