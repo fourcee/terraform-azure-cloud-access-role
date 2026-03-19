@@ -42,6 +42,11 @@ module "test" {
       name              = "Contributor"
       condition         = "@Resource[Microsoft.Storage/storageAccounts:Name] StringEqualsIgnoreCase 'stsample'"
       condition_version = "2.0"
+    },
+    {
+      name              = "Storage Blob Data Reader"
+      condition         = null
+      condition_version = null
     }
   ]
 

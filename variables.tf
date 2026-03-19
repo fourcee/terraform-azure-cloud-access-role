@@ -53,7 +53,7 @@ variable "predefined_roles" {
     condition         = optional(string)
     condition_version = optional(string)
   }))
-  default     = []
+  default = []
 
   validation {
     condition = alltrue([
@@ -74,7 +74,7 @@ variable "predefined_roles" {
       for role in var.predefined_roles :
       (
         (try(role.condition, null) == null && try(role.condition_version, null) == null) ||
-        (length(trimspace(try(role.condition, ""))) > 0 && length(trimspace(try(role.condition_version, ""))) > 0)
+        (length(try(trimspace(role.condition), "")) > 0 && length(try(trimspace(role.condition_version), "")) > 0)
       )
     ])
     error_message = "Predefined roles condition and condition_version must either both be set (non-empty) or both be omitted."
@@ -130,7 +130,7 @@ variable "custom_roles" {
       for role in var.custom_roles :
       (
         (try(role.condition, null) == null && try(role.condition_version, null) == null) ||
-        (length(trimspace(try(role.condition, ""))) > 0 && length(trimspace(try(role.condition_version, ""))) > 0)
+        (length(try(trimspace(role.condition), "")) > 0 && length(try(trimspace(role.condition_version), "")) > 0)
       )
     ])
     error_message = "Custom roles condition and condition_version must either both be set (non-empty) or both be omitted."

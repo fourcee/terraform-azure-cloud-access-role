@@ -3,16 +3,16 @@ locals {
   predefined_roles = {
     for role in var.predefined_roles : role.name => {
       name              = role.name
-      condition         = length(trimspace(try(role.condition, ""))) > 0 ? trimspace(role.condition) : null
-      condition_version = length(trimspace(try(role.condition_version, ""))) > 0 ? trimspace(role.condition_version) : null
+      condition         = length(try(trimspace(role.condition), "")) > 0 ? try(trimspace(role.condition), "") : null
+      condition_version = length(try(trimspace(role.condition_version), "")) > 0 ? try(trimspace(role.condition_version), "") : null
     }
   }
 
   custom_roles = {
     for role in var.custom_roles : role.name => {
       name              = role.name
-      condition         = length(trimspace(try(role.condition, ""))) > 0 ? trimspace(role.condition) : null
-      condition_version = length(trimspace(try(role.condition_version, ""))) > 0 ? trimspace(role.condition_version) : null
+      condition         = length(try(trimspace(role.condition), "")) > 0 ? try(trimspace(role.condition), "") : null
+      condition_version = length(try(trimspace(role.condition_version), "")) > 0 ? try(trimspace(role.condition_version), "") : null
     }
   }
 
