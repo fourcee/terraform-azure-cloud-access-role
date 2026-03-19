@@ -1,17 +1,17 @@
 # Terraform Azure Cloud Access Role
 
-Terraform module for creating Azure IAM role assignments to Entra (Azure AD) groups across multiple scopes and roles.
+Terraform module for creating Azure IAM role assignments to Entra (Azure AD) groups and users across multiple scopes and roles.
 
 ## Overview
 
-This module simplifies the process of assigning Azure roles to Entra groups by automatically creating role assignments for all combinations of:
-- Entra group IDs (principals)
+This module simplifies the process of assigning Azure roles to Entra principals by automatically creating role assignments for all combinations of:
+- Entra group and/or user IDs (principals)
 - Scopes (management groups, subscription IDs, resource groups, etc.)
 - Predefined Azure built-in roles and custom roles
 
 ## Features
 
-- ✅ Assign multiple roles to multiple groups across multiple scopes
+- ✅ Assign multiple roles to multiple users/groups across multiple scopes
 - ✅ Uses Azure built-in role names (e.g., "Reader", "Contributor")
 - ✅ Supports optional RBAC assignment conditions for predefined and custom roles
 - ✅ Create custom role definitions with granular permissions
@@ -30,6 +30,10 @@ module "cloud_access_role" {
   group_ids = [
     "12345678-1234-1234-1234-123456789abc",
     "87654321-4321-4321-4321-cba987654321"
+  ]
+
+  user_ids = [
+    "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
   ]
 
   scopes = [
@@ -56,6 +60,10 @@ module "cloud_access_role_mg" {
 
   group_ids = [
     "12345678-1234-1234-1234-123456789abc"
+  ]
+
+  user_ids = [
+    "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
   ]
 
   scopes = [
@@ -161,6 +169,7 @@ module "cloud_access_role_jit" {
   jit_enabled                         = true
   jit_require_justification           = true
   jit_approval_group_ids              = ["22222222-2222-2222-2222-222222222222"] # Set [] for no approval workflow
+  jit_approval_user_ids               = ["33333333-3333-3333-3333-333333333333"] # Optional additional approvers
   jit_max_activation_duration_seconds = 3600
 }
 ```
@@ -182,13 +191,15 @@ module "cloud_access_role_jit" {
 
 | Name | Description | Type | Required |
 |------|-------------|------|----------|
-| group_ids | List of Entra (Azure AD) group object IDs to assign access to | `list(string)` | yes |
+| group_ids | List of Entra (Azure AD) group object IDs to assign access to | `list(string)` | no |
+| user_ids | List of Entra (Azure AD) user object IDs to assign access to | `list(string)` | no |
 | scopes | List of scopes where the role assignments will be created (e.g., '/subscriptions/{subscription-id}' or '/providers/Microsoft.Management/managementGroups/{management-group-id}') | `list(string)` | yes |
 | predefined_roles | List of Azure built-in role assignments to create, each with optional condition settings | `list(object)` | no |
 | custom_roles | List of custom role definitions to create and include as part of the assignment | `list(object)` | no |
 | jit_enabled | Enable Azure PIM eligible role assignments instead of regular role assignments | `bool` | no |
 | jit_require_justification | Require justification when activating a JIT role assignment | `bool` | no |
 | jit_approval_group_ids | List of Entra group object IDs used as JIT activation approvers | `list(string)` | no |
+| jit_approval_user_ids | List of Entra user object IDs used as JIT activation approvers | `list(string)` | no |
 | jit_max_activation_duration_seconds | Maximum JIT activation duration in seconds (required when jit_enabled = true) | `number` | no |
 
 ### Predefined Roles Object
@@ -222,7 +233,7 @@ The `custom_roles` variable accepts a list of objects with the following fields:
 
 | Name | Description |
 |------|-------------|
-| role_assignment_ids | Map of role assignment IDs, keyed by 'group_id::scope::role_name' |
+| role_assignment_ids | Map of role assignment IDs, keyed by 'principal_type::principal_id::scope::role_name' |
 | role_assignments | Map of role assignment details including id, principal_id, role_name, and scope |
 | custom_role_definition_ids | Map of custom role definition IDs, keyed by role name |
 | custom_role_definitions | Map of custom role definition details |
@@ -232,18 +243,19 @@ The `custom_roles` variable accepts a list of objects with the following fields:
 ## Notes
 
 - The module creates N×M×R role assignments where:
-  - N = number of group IDs
+  - N = number of principal IDs (`group_ids` + `user_ids`)
   - M = number of scopes
   - R = number of role definitions to assign (`predefined_roles` + `custom_roles`)
 - When `jit_enabled = true`, the module creates:
   - `azurerm_role_management_policy` for each `scope::role_name`
-  - `azurerm_pim_eligible_role_assignment` for each `group_id::scope::role_name`
+  - `azurerm_pim_eligible_role_assignment` for each `principal_type::principal_id::scope::role_name`
   - no regular `azurerm_role_assignment` resources
-- If `jit_approval_group_ids` is empty, no JIT approval workflow is configured
-- Group IDs must be valid Entra (Azure AD) group object IDs
+- If both `jit_approval_group_ids` and `jit_approval_user_ids` are empty, no JIT approval workflow is configured
+- At least one principal must be provided using `group_ids` and/or `user_ids`
+- Group IDs and user IDs must be valid Entra object IDs
 - Scopes must be in the format: `/subscriptions/{id}`, `/subscriptions/{id}/resourceGroups/{name}`, `/providers/Microsoft.Management/managementGroups/{id}`, or more specific resource paths
 - Predefined role names must be valid Azure built-in role names
-- Custom roles defined in `custom_roles` are automatically created and assigned to the specified groups and scopes
+- Custom roles defined in `custom_roles` are automatically created and assigned to the specified principals and scopes
 - When condition settings are supplied for a role, both `condition` and `condition_version` must be set
 
 ## Common Azure Built-in Roles

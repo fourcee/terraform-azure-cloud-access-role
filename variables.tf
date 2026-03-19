@@ -1,10 +1,11 @@
 variable "group_ids" {
   description = "List of Entra (Azure AD) group object IDs to assign access to"
   type        = list(string)
+  default     = []
 
   validation {
-    condition     = length(var.group_ids) > 0
-    error_message = "At least one group ID must be provided."
+    condition     = length(var.group_ids) > 0 || length(var.user_ids) > 0
+    error_message = "At least one principal ID must be provided via group_ids and/or user_ids."
   }
 
   validation {
@@ -12,6 +13,19 @@ variable "group_ids" {
       for id in var.group_ids : can(regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$", id))
     ])
     error_message = "All group IDs must be valid UUIDs in the format xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx."
+  }
+}
+
+variable "user_ids" {
+  description = "List of Entra (Azure AD) user object IDs to assign access to"
+  type        = list(string)
+  default     = []
+
+  validation {
+    condition = alltrue([
+      for id in var.user_ids : can(regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$", id))
+    ])
+    error_message = "All user IDs must be valid UUIDs in the format xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx."
   }
 }
 
@@ -153,6 +167,19 @@ variable "jit_approval_group_ids" {
       for id in var.jit_approval_group_ids : can(regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$", id))
     ])
     error_message = "All JIT approval group IDs must be valid UUIDs in the format xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx."
+  }
+}
+
+variable "jit_approval_user_ids" {
+  description = "List of Entra user object IDs used as JIT activation approvers"
+  type        = list(string)
+  default     = []
+
+  validation {
+    condition = alltrue([
+      for id in var.jit_approval_user_ids : can(regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$", id))
+    ])
+    error_message = "All JIT approval user IDs must be valid UUIDs in the format xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx."
   }
 }
 
