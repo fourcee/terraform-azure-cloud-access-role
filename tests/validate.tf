@@ -24,6 +24,10 @@ module "test" {
     "00000000-0000-0000-0000-000000000002"
   ]
 
+  user_ids = [
+    "00000000-0000-0000-0000-00000000000a"
+  ]
+
   scopes = [
     "/subscriptions/00000000-0000-0000-0000-000000000000",
     "/subscriptions/11111111-1111-1111-1111-111111111111",
@@ -64,6 +68,10 @@ module "test_jit" {
     "00000000-0000-0000-0000-000000000001"
   ]
 
+  user_ids = [
+    "00000000-0000-0000-0000-00000000000b"
+  ]
+
   scopes = [
     "/subscriptions/00000000-0000-0000-0000-000000000000"
   ]
@@ -79,7 +87,26 @@ module "test_jit" {
   jit_enabled                         = true
   jit_require_justification           = true
   jit_approval_group_ids              = ["00000000-0000-0000-0000-000000000003"]
+  jit_approval_user_ids               = ["00000000-0000-0000-0000-00000000000c"]
   jit_max_activation_duration_seconds = 3600
+}
+
+module "test_users_only" {
+  source = "./.."
+
+  user_ids = [
+    "00000000-0000-0000-0000-00000000000d"
+  ]
+
+  scopes = [
+    "/subscriptions/00000000-0000-0000-0000-000000000000"
+  ]
+
+  predefined_roles = [
+    {
+      name = "Reader"
+    }
+  ]
 }
 
 # Validate that outputs are defined
@@ -109,4 +136,8 @@ output "test_jit_pim_eligible_role_assignment_ids" {
 
 output "test_jit_role_management_policy_ids" {
   value = module.test_jit.role_management_policy_ids
+}
+
+output "test_users_only_role_assignment_ids" {
+  value = module.test_users_only.role_assignment_ids
 }

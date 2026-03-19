@@ -1,5 +1,5 @@
 output "role_assignment_ids" {
-  description = "Map of role assignment IDs, keyed by 'group_id::scope::role_name'"
+  description = "Map of role assignment IDs, keyed by 'principal_type::principal_id::scope::role_name'"
   value = var.jit_enabled ? {
     for key, assignment in azurerm_pim_eligible_role_assignment.assignment :
     key => assignment.id
@@ -15,7 +15,8 @@ output "role_assignments" {
     for key, assignment in local.role_assignments_map :
     key => {
       id                 = var.jit_enabled ? azurerm_pim_eligible_role_assignment.assignment[key].id : azurerm_role_assignment.assignment[key].id
-      principal_id       = assignment.group_id
+      principal_id       = assignment.principal_id
+      principal_type     = assignment.principal_type
       role_name          = assignment.role_name
       role_definition_id = local.role_definition_ids[assignment.role_name]
       scope              = assignment.scope

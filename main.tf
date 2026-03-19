@@ -18,18 +18,30 @@ locals {
 
   all_roles = merge(local.predefined_roles, local.custom_roles)
 
-  # Create a list of all combinations of group_id, scope, and role_name
+  principals = concat(
+    [for group_id in var.group_ids : {
+      principal_id   = group_id
+      principal_type = "Group"
+    }],
+    [for user_id in var.user_ids : {
+      principal_id   = user_id
+      principal_type = "User"
+    }]
+  )
+
+  # Create a list of all combinations of principal_id, scope, and role_name
   role_assignments = flatten([
-    for group_id in var.group_ids : [
+    for principal in local.principals : [
       for scope in var.scopes : [
         for role_name, role in local.all_roles : {
-          group_id          = group_id
+          principal_id      = principal.principal_id
+          principal_type    = principal.principal_type
           scope             = scope
           role_name         = role_name
           condition         = role.condition
           condition_version = role.condition_version
           # Create a unique key for each assignment using :: as separator to avoid collisions
-          key = "${group_id}::${scope}::${role_name}"
+          key = "${principal.principal_type}::${principal.principal_id}::${scope}::${role_name}"
         }
       ]
     ]
@@ -66,6 +78,22 @@ locals {
     policy.key => policy
   }
 
+  jit_approvers = concat(
+    [for group_id in var.jit_approval_group_ids : {
+      object_id = group_id
+      type      = "Group"
+    }],
+    [for user_id in var.jit_approval_user_ids : {
+      object_id = user_id
+      type      = "User"
+    }]
+  )
+
+  jit_approvers_map = {
+    for idx, approver in local.jit_approvers :
+    tostring(idx) => approver
+  }
+
   jit_max_activation_duration_iso8601 = var.jit_max_activation_duration_seconds == null ? null : format("PT%dS", floor(var.jit_max_activation_duration_seconds))
 }
 
@@ -99,8 +127,8 @@ resource "azurerm_role_assignment" "assignment" {
 
   scope                            = each.value.scope
   role_definition_id               = local.role_definition_ids[each.value.role_name]
-  principal_id                     = each.value.group_id
-  principal_type                   = "Group"
+  principal_id                     = each.value.principal_id
+  principal_type                   = each.value.principal_type
   skip_service_principal_aad_check = true
   condition                        = each.value.condition
   condition_version                = each.value.condition_version
@@ -115,16 +143,16 @@ resource "azurerm_role_management_policy" "jit" {
   activation_rules {
     maximum_duration      = local.jit_max_activation_duration_iso8601
     require_justification = var.jit_require_justification
-    require_approval      = length(var.jit_approval_group_ids) > 0
+    require_approval      = length(local.jit_approvers) > 0
 
     dynamic "approval_stage" {
-      for_each = length(var.jit_approval_group_ids) > 0 ? [1] : []
+      for_each = length(local.jit_approvers) > 0 ? [1] : []
       content {
         dynamic "primary_approver" {
-          for_each = toset(var.jit_approval_group_ids)
+          for_each = local.jit_approvers_map
           content {
-            object_id = primary_approver.value
-            type      = "Group"
+            object_id = primary_approver.value.object_id
+            type      = primary_approver.value.type
           }
         }
       }
@@ -137,7 +165,7 @@ resource "azurerm_pim_eligible_role_assignment" "assignment" {
 
   scope              = each.value.scope
   role_definition_id = local.role_definition_ids[each.value.role_name]
-  principal_id       = each.value.group_id
+  principal_id       = each.value.principal_id
   condition          = each.value.condition
   condition_version  = each.value.condition_version
 }
