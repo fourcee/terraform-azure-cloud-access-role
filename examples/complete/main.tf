@@ -23,6 +23,21 @@ module "cloud_access_role" {
     "87654321-4321-4321-4321-cba987654321"  # Operations Team
   ]
 
+  # Replace with actual Entra service principal or managed identity object IDs
+  service_principals = [
+    {
+      object_id      = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+      principal_type = "service_principal"
+      display_name   = "deployment-automation"
+      app_id         = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
+    },
+    {
+      object_id      = "cccccccc-cccc-cccc-cccc-cccccccccccc"
+      principal_type = "managed_identity"
+      display_name   = "platform-managed-identity"
+    }
+  ]
+
   # Replace with actual subscription IDs
   scopes = [
     "/subscriptions/00000000-0000-0000-0000-000000000000", # Dev Subscription

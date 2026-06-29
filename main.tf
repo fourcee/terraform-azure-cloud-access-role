@@ -22,10 +22,23 @@ locals {
     [for group_id in var.group_ids : {
       principal_id   = group_id
       principal_type = "Group"
+      principal_kind = "group"
+      display_name   = null
+      app_id         = null
     }],
     [for user_id in var.user_ids : {
       principal_id   = user_id
       principal_type = "User"
+      principal_kind = "user"
+      display_name   = null
+      app_id         = null
+    }],
+    [for principal in var.service_principals : {
+      principal_id   = principal.object_id
+      principal_type = "ServicePrincipal"
+      principal_kind = lower(trimspace(principal.principal_type))
+      display_name   = trimspace(principal.display_name)
+      app_id         = try(principal.app_id, null)
     }]
   )
 
@@ -36,6 +49,9 @@ locals {
         for role_name, role in local.all_roles : {
           principal_id      = principal.principal_id
           principal_type    = principal.principal_type
+          principal_kind    = principal.principal_kind
+          display_name      = principal.display_name
+          app_id            = principal.app_id
           scope             = scope
           role_name         = role_name
           condition         = role.condition

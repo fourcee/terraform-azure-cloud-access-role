@@ -17,6 +17,9 @@ output "role_assignments" {
       id                 = var.jit_enabled ? azurerm_pim_eligible_role_assignment.assignment[key].id : azurerm_role_assignment.assignment[key].id
       principal_id       = assignment.principal_id
       principal_type     = assignment.principal_type
+      principal_kind     = assignment.principal_kind
+      display_name       = assignment.display_name
+      app_id             = assignment.app_id
       role_name          = assignment.role_name
       role_definition_id = local.role_definition_ids[assignment.role_name]
       scope              = assignment.scope
@@ -52,10 +55,10 @@ output "pim_eligible_role_assignments" {
   value = var.jit_enabled ? {
     for key, assignment in azurerm_pim_eligible_role_assignment.assignment :
     key => {
-      scope                         = assignment.scope
-      role_definition_id            = assignment.role_definition_id
-      eligible_role_assignment_id   = assignment.id
-      principal_id                  = assignment.principal_id
+      scope                       = assignment.scope
+      role_definition_id          = assignment.role_definition_id
+      eligible_role_assignment_id = assignment.id
+      principal_id                = assignment.principal_id
     }
   } : {}
 }

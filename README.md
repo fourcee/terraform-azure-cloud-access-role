@@ -1,17 +1,17 @@
 # Terraform Azure Cloud Access Role
 
-Terraform module for creating Azure IAM role assignments to Entra (Azure AD) groups and users across multiple scopes and roles.
+Terraform module for creating Azure IAM role assignments to Entra (Azure AD) groups, users, service principals, and managed identities across multiple scopes and roles.
 
 ## Overview
 
 This module simplifies the process of assigning Azure roles to Entra principals by automatically creating role assignments for all combinations of:
-- Entra group and/or user IDs (principals)
+- Entra group, user, service principal, and/or managed identity IDs (principals)
 - Scopes (management groups, subscription IDs, resource groups, etc.)
 - Predefined Azure built-in roles and custom roles
 
 ## Features
 
-- ✅ Assign multiple roles to multiple users/groups across multiple scopes
+- ✅ Assign multiple roles to multiple users, groups, service principals, and managed identities across multiple scopes
 - ✅ Uses Azure built-in role names (e.g., "Reader", "Contributor")
 - ✅ Supports optional RBAC assignment conditions for predefined and custom roles
 - ✅ Create custom role definitions with granular permissions
@@ -34,6 +34,20 @@ module "cloud_access_role" {
 
   user_ids = [
     "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+  ]
+
+  service_principals = [
+    {
+      object_id      = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
+      principal_type = "service_principal"
+      display_name   = "deployment-automation"
+      app_id         = "cccccccc-cccc-cccc-cccc-cccccccccccc"
+    },
+    {
+      object_id      = "dddddddd-dddd-dddd-dddd-dddddddddddd"
+      principal_type = "managed_identity"
+      display_name   = "platform-managed-identity"
+    }
   ]
 
   scopes = [
@@ -193,6 +207,7 @@ module "cloud_access_role_jit" {
 |------|-------------|------|----------|
 | group_ids | List of Entra (Azure AD) group object IDs to assign access to | `list(string)` | no |
 | user_ids | List of Entra (Azure AD) user object IDs to assign access to | `list(string)` | no |
+| service_principals | List of Entra service principal or managed identity object IDs to assign access to | `list(object)` | no |
 | scopes | List of scopes where the role assignments will be created (e.g., '/subscriptions/{subscription-id}' or '/providers/Microsoft.Management/managementGroups/{management-group-id}') | `list(string)` | yes |
 | predefined_roles | List of Azure built-in role assignments to create, each with optional condition settings | `list(object)` | no |
 | custom_roles | List of custom role definitions to create and include as part of the assignment | `list(object)` | no |
@@ -211,6 +226,17 @@ The `predefined_roles` variable accepts a list of objects with the following fie
 | name | Azure built-in role name to assign | `string` |
 | condition | Optional RBAC condition expression for the assignment | `string` |
 | condition_version | Optional RBAC condition version (for example `2.0`) | `string` |
+
+### Service Principals Object
+
+The `service_principals` variable accepts a list of objects with the following fields:
+
+| Field | Description | Type |
+|-------|-------------|------|
+| object_id | Entra object ID for the service principal or managed identity | `string` |
+| principal_type | Workload identity kind: `service_principal` or `managed_identity` | `string` |
+| display_name | Display name for output context | `string` |
+| app_id | Optional application/client ID for output context | `string` |
 
 ### Custom Roles Object
 
@@ -234,7 +260,7 @@ The `custom_roles` variable accepts a list of objects with the following fields:
 | Name | Description |
 |------|-------------|
 | role_assignment_ids | Map of role assignment IDs, keyed by 'principal_type::principal_id::scope::role_name' |
-| role_assignments | Map of role assignment details including id, principal_id, role_name, and scope |
+| role_assignments | Map of role assignment details including id, principal_id, principal_type, principal_kind, display_name, app_id, role_name, and scope |
 | custom_role_definition_ids | Map of custom role definition IDs, keyed by role name |
 | custom_role_definitions | Map of custom role definition details |
 | pim_eligible_role_assignment_ids | Map of PIM eligible role assignment IDs, keyed by 'group_id::scope::role_name' |
@@ -243,7 +269,7 @@ The `custom_roles` variable accepts a list of objects with the following fields:
 ## Notes
 
 - The module creates N×M×R role assignments where:
-  - N = number of principal IDs (`group_ids` + `user_ids`)
+  - N = number of principal IDs (`group_ids` + `user_ids` + `service_principals`)
   - M = number of scopes
   - R = number of role definitions to assign (`predefined_roles` + `custom_roles`)
 - When `jit_enabled = true`, the module creates:
@@ -251,8 +277,9 @@ The `custom_roles` variable accepts a list of objects with the following fields:
   - `azurerm_pim_eligible_role_assignment` for each `principal_type::principal_id::scope::role_name`
   - no regular `azurerm_role_assignment` resources
 - If both `jit_approval_group_ids` and `jit_approval_user_ids` are empty, no JIT approval workflow is configured
-- At least one principal must be provided using `group_ids` and/or `user_ids`
-- Group IDs and user IDs must be valid Entra object IDs
+- At least one principal must be provided using `group_ids`, `user_ids`, and/or `service_principals`
+- Group IDs, user IDs, service principal object IDs, and managed identity object IDs must be valid Entra object IDs
+- Service principals and managed identities are assigned to Azure RBAC using AzureRM's `ServicePrincipal` principal type
 - Scopes must be in the format: `/subscriptions/{id}`, `/subscriptions/{id}/resourceGroups/{name}`, `/providers/Microsoft.Management/managementGroups/{id}`, or more specific resource paths
 - Predefined role names must be valid Azure built-in role names
 - Custom roles defined in `custom_roles` are automatically created and assigned to the specified principals and scopes

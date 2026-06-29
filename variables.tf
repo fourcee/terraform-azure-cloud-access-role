@@ -17,8 +17,8 @@ variable "user_ids" {
   default     = []
 
   validation {
-    condition     = length(var.group_ids) > 0 || length(var.user_ids) > 0
-    error_message = "At least one principal ID must be provided via group_ids and/or user_ids."
+    condition     = length(var.group_ids) > 0 || length(var.user_ids) > 0 || length(var.service_principals) > 0
+    error_message = "At least one principal ID must be provided via group_ids, user_ids, and/or service_principals."
   }
 
   validation {
@@ -26,6 +26,45 @@ variable "user_ids" {
       for id in var.user_ids : can(regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$", id))
     ])
     error_message = "All user IDs must be valid UUIDs in the format xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx."
+  }
+}
+
+variable "service_principals" {
+  description = "List of Entra service principal or managed identity object IDs to assign access to"
+  type = list(object({
+    object_id      = string
+    principal_type = string
+    display_name   = string
+    app_id         = optional(string)
+  }))
+  default = []
+
+  validation {
+    condition = alltrue([
+      for principal in var.service_principals : can(regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$", principal.object_id))
+    ])
+    error_message = "All service principal object IDs must be valid UUIDs in the format xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx."
+  }
+
+  validation {
+    condition = alltrue([
+      for principal in var.service_principals : contains(["service_principal", "managed_identity"], lower(trimspace(principal.principal_type)))
+    ])
+    error_message = "All service principal principal_type values must be either service_principal or managed_identity."
+  }
+
+  validation {
+    condition = alltrue([
+      for principal in var.service_principals : length(trimspace(principal.display_name)) > 0
+    ])
+    error_message = "All service principal display_name values must be non-empty."
+  }
+
+  validation {
+    condition = alltrue([
+      for principal in var.service_principals : try(principal.app_id, null) == null || can(regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$", principal.app_id))
+    ])
+    error_message = "All service principal app_id values must be valid UUIDs when provided."
   }
 }
 

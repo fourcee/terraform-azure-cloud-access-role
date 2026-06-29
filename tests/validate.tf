@@ -28,6 +28,20 @@ module "test" {
     "00000000-0000-0000-0000-00000000000a"
   ]
 
+  service_principals = [
+    {
+      object_id      = "00000000-0000-0000-0000-000000000010"
+      principal_type = "service_principal"
+      display_name   = "example-automation-app"
+      app_id         = "00000000-0000-0000-0000-000000000011"
+    },
+    {
+      object_id      = "00000000-0000-0000-0000-000000000012"
+      principal_type = "managed_identity"
+      display_name   = "example-managed-identity"
+    }
+  ]
+
   scopes = [
     "/subscriptions/00000000-0000-0000-0000-000000000000",
     "/subscriptions/11111111-1111-1111-1111-111111111111",
@@ -114,6 +128,28 @@ module "test_users_only" {
   ]
 }
 
+module "test_service_principals_only" {
+  source = "./.."
+
+  service_principals = [
+    {
+      object_id      = "00000000-0000-0000-0000-000000000013"
+      principal_type = "managed_identity"
+      display_name   = "example-workload-identity"
+    }
+  ]
+
+  scopes = [
+    "/subscriptions/00000000-0000-0000-0000-000000000000"
+  ]
+
+  predefined_roles = [
+    {
+      name = "Reader"
+    }
+  ]
+}
+
 # Validate that outputs are defined
 output "test_role_assignment_ids" {
   value = module.test.role_assignment_ids
@@ -145,4 +181,8 @@ output "test_jit_role_management_policy_ids" {
 
 output "test_users_only_role_assignment_ids" {
   value = module.test_users_only.role_assignment_ids
+}
+
+output "test_service_principals_only_role_assignment_ids" {
+  value = module.test_service_principals_only.role_assignment_ids
 }
